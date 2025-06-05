@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Chat Room</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #chat { height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Chat Room</h1>
+    <label>Username: <input id="username" /></label>
+    <label>Room: <input id="room" value="lobby" /></label>
+    <button onclick="connect()">Connect</button>
+    <div id="chat"></div>
+    <input id="message" placeholder="message" />
+    <button onclick="sendMessage()">Send</button>
+    <input id="private_to" placeholder="private to" />
+    <input id="private_msg" placeholder="private message" />
+    <button onclick="sendPrivate()">Send Private</button>
+
+<script>
+let ws;
+function connect() {
+    const username = document.getElementById('username').value;
+    const room = document.getElementById('room').value;
+    ws = new WebSocket('ws://' + location.host + ':8765');
+    ws.onopen = () => {
+        ws.send(JSON.stringify({action: 'join', username: username, room: room}));
+    };
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        const chat = document.getElementById('chat');
+        if (data.type === 'room_message') {
+            chat.innerHTML += '<div>['+data.room+'] ' + data.message + '</div>';
+        } else if (data.type === 'private_message') {
+            chat.innerHTML += '<div>(private from '+data.from+') ' + data.message + '</div>';
+        }
+        chat.scrollTop = chat.scrollHeight;
+    };
+}
+
+function sendMessage() {
+    const room = document.getElementById('room').value;
+    const msg = document.getElementById('message').value;
+    ws.send(JSON.stringify({action: 'message', room: room, message: msg}));
+}
+
+function sendPrivate() {
+    const to = document.getElementById('private_to').value;
+    const msg = document.getElementById('private_msg').value;
+    ws.send(JSON.stringify({action: 'private', to: to, message: msg}));
+}
+</script>
+</body>
+</html>
